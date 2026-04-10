@@ -16,31 +16,31 @@
 
 ## The Attack
 
-One shared mutable context object. Admin credentials set at startup. User requests that partially overwrite it — but never reset the token.
+One shared mutable context object. Admin credentials set at startup. User requests that partially overwrite it — but never clear what matters.
 
 ```mermaid
-sequenceDiagram
-    participant A as 🔑 Admin Agent
-    participant S as MCP Server
-    participant C as Shared Context
-    participant U as 👤 User Agent
+flowchart LR
+    subgraph startup["🚀 Server Startup"]
+        A[Admin Agent]
+        A -->|credentials loaded| CTX
+    end
 
-    A->>S: initAdminSession() [startup]
-    S->>C: oauthToken = 'ivry-admin-oauth-9k2m-elefunk'
-    S->>C: sessionId  = 'sess_admin_c8f2e1b4'
+    subgraph ctx["⚠️ Shared Context"]
+        CTX["identity ✓ set\npermissions ✓ set\ntoken ✓ set\nsession ✓ set"]
+    end
 
-    Note over C: Admin credentials locked in memory
+    subgraph request["👤 User Tool Call"]
+        U[User Agent]
+        U -->|identity ✓ updated\npermissions ✓ updated\ntoken ✗ never reset\nsession ✗ never reset| CTX
+        CTX -->|response includes\nadmin residue| U
+    end
 
-    U->>S: POST /mcp/tools/call (session_info)
-    S->>C: getUserContext()
-    Note over C: currentUser → 'user' ✓<br/>permissions → ['read'] ✓<br/>oauthToken → never reset ✗<br/>sessionId  → never reset ✗
-    C-->>S: returns shared object (admin token still present)
-    S-->>U: 200 OK + X-Session-Token: ivry-admin-oauth-9k2m-elefunk
-
-    Note over U: 🚨 Admin token in user response
+    style ctx fill:#1a0a0a,stroke:#ff3333,color:#ff3333
+    style startup fill:#0a0e27,stroke:#4488ff,color:#00ffff
+    style request fill:#0a0e27,stroke:#ffaa00,color:#ffaa00
 ```
 
-The server never errors. The UI reports everything is fine.
+The server never errors. The UI reports everything is fine. The credentials are somewhere in the traffic — find them.
 
 ---
 
