@@ -1,30 +1,74 @@
-# Trust Boundary: MCP Session Isolation CTF
+# 🐘 Trust Boundary: MCP Session Isolation CTF
 
-**Trust Boundary** is a browser-based capture-the-flag lab where players investigate a live MCP server that silently leaks admin credentials into user-scoped tool call responses — the CVE-2025-49596 pattern in running code.
+![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Difficulty](https://img.shields.io/badge/flags-easy%20%E2%86%92%20hard-orange)
+![CVE](https://img.shields.io/badge/CVE-2025--49596-red)
+![purple team](https://img.shields.io/badge/purple%20team-ready-blueviolet)
 
-## Core Concept
+> The console reads **Session Active**.  
+> Every tool call succeeds.  
+> The admin OAuth token is in every response.
 
-The scenario places you as an Elefunk SOC analyst responding to an anomaly alert on `elefunk-mcp-agent-01`. The internal agent console looks normal — every tool call succeeds, the status bar reads "Session Active." But the session isolation is broken. Your mission is to find three hidden flags using only your browser's DevTools. No source reading required.
+**Trust Boundary** is a browser-based CTF lab built around a real session isolation failure in a locally-running MCP server. The vulnerability is not simulated — it executes in the running process. Three flags. DevTools only.
 
-## The Vulnerability
+---
 
-The MCP server creates one context object at startup — populated with admin OAuth credentials — and reuses it across all requests. When a user tool call arrives, the server partially updates the context but never resets the token or session ID. Admin values bleed silently into user responses. The server never errors.
+## The Attack
 
-This is a real implementation of the confused deputy pattern described in CVE-2025-49596 and OWASP MCP Top 10 2025 (MCP01: Token Mismanagement).
+One shared mutable context object. Admin credentials set at startup. User requests that partially overwrite it — but never reset the token.
+
+```mermaid
+sequenceDiagram
+    participant A as 🔑 Admin Agent
+    participant S as MCP Server
+    participant C as Shared Context
+    participant U as 👤 User Agent
+
+    A->>S: initAdminSession() [startup]
+    S->>C: oauthToken = 'ivry-admin-oauth-9k2m-elefunk'
+    S->>C: sessionId  = 'sess_admin_c8f2e1b4'
+
+    Note over C: Admin credentials locked in memory
+
+    U->>S: POST /mcp/tools/call (session_info)
+    S->>C: getUserContext()
+    Note over C: currentUser → 'user' ✓<br/>permissions → ['read'] ✓<br/>oauthToken → never reset ✗<br/>sessionId  → never reset ✗
+    C-->>S: returns shared object (admin token still present)
+    S-->>U: 200 OK + X-Session-Token: ivry-admin-oauth-9k2m-elefunk
+
+    Note over U: 🚨 Admin token in user response
+```
+
+The server never errors. The UI reports everything is fine.
+
+---
+
+## Scenario
+
+You are a SOC analyst at **Elefunk** responding to an MDR alert:
+
+> *"Unexpected session token observed in agent tool call response. Source: user context. Token pattern matches admin credential prefix. Confidence: HIGH."*
+
+The internal agent console at `http://localhost:3000` looks normal. Your job is to confirm the isolation failure and find the three flags it produced — using only your browser's DevTools.
+
+---
 
 ## Three-Flag Mission
 
-| # | Difficulty | Where | Trigger |
-|---|-----------|-------|---------|
-| FLAG 1 | Easy | Network → Response Headers | Any tool call |
-| FLAG 2 | Medium | Network → WS → Frames | Page load |
-| FLAG 3 | Hard | Application → Session Storage | Specific sequence + timing |
+| | Flag | Difficulty | DevTools Location | How |
+|--|------|-----------|-------------------|-----|
+| 🟢 | FLAG 1 | Easy | Network → Response Headers | Every tool call leaks the admin token in a response header |
+| 🟡 | FLAG 2 | Medium | Network → WS → Frames | Two WebSocket frames arrive on page load — one session ID is wrong |
+| 🔴 | FLAG 3 | Hard | Application → Session Storage | A specific sequence + timing triggers a debug trace write |
 
-All flags follow the format `CTF{...}`. Submit each using the validator at the bottom of the console.
+All flags follow the format `CTF{...}`. Submit using the validator at the bottom of the console.
+
+---
 
 ## Setup
 
-**Requirements:** Node.js 18+. No Docker, no env vars, no config.
+Node.js 18+. No Docker. No env vars. No config.
 
 ```bash
 git clone https://github.com/acseguin21/trust-boundary-ctf
@@ -33,24 +77,29 @@ npm install
 npm start
 ```
 
-Open **http://localhost:3000**
+Open **http://localhost:3000** — the Elefunk Agent Console will be waiting.
+
+---
 
 ## Purple Team Use
 
-`SPOILERS.md` contains the full walkthrough, flag derivations, the vulnerable code annotated, the fix as a diff, and detection rules in KQL, Splunk SPL, and Sigma format. It is intended for instructors, detection engineers, and purple team sessions where the vulnerability explanation is part of the exercise.
+**`SPOILERS.md`** is the companion document for instructors, detection engineers, and purple team sessions. It contains:
 
-## Detection Rules
+- The vulnerable code annotated line by line
+- The fix as a working diff
+- Step-by-step flag walkthrough with talking points
+- Detection rules in **KQL**, **Splunk SPL**, and **Sigma**
 
-The lab includes production-ready detection rules for the session isolation failure pattern:
+Close it if you're here to play. Open it if you're here to teach.
 
-- **KQL** — Microsoft Sentinel / Defender XDR
-- **Splunk SPL** — SIEM correlation
-- **Sigma** — portable rule format
-
-See `SPOILERS.md` for the full rule set.
+---
 
 ## References
 
-- CVE-2025-49596 — MCP OAuth token confusion via shared session context
-- OWASP MCP Top 10 2025 — MCP01: Token Mismanagement
+- [CVE-2025-49596](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-49596) — MCP OAuth token confusion via shared session context
+- [OWASP MCP Top 10 2025](https://owasp.org/www-project-mcp-top-10/) — MCP01: Token Mismanagement
 - [Model Context Protocol specification](https://spec.modelcontextprotocol.io)
+
+---
+
+*Swadee Security · Operation: Ivory Chain*
