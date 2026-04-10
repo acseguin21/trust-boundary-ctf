@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elefunk Agent Console · Ivory Chain</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────── -->
+  <div id="header">
+    <div id="header-left">
+      <span id="header-logo">🐘</span>
+      <span id="header-title">ELEFUNK AGENT CONSOLE</span>
+      <span id="header-op">// OPERATION: IVORY CHAIN</span>
+    </div>
+    <div id="header-right">
+      <div class="status-pill">
+        <span class="status-pill-dot"></span>
+        <span>MCP Server v2.1.4</span>
+      </div>
+      <div class="status-pill">
+        <span class="status-pill-dot"></span>
+        <span>Session Active</span>
+      </div>
+      <div class="status-pill">
+        <span class="status-pill-dot"></span>
+        <span>elefunk-mcp-agent-01</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main area ───────────────────────────────────────── -->
+  <div id="main-area">
+
+    <!-- Log panel -->
+    <div id="log-panel">
+      <div id="log-scroll"></div>
+
+      <div id="action-bar">
+        <span id="action-label">TOOLS //</span>
+        <button class="tool-btn" id="btn-session-info">Inspect Session</button>
+        <button class="tool-btn" id="btn-token-inspect">Inspect Token</button>
+        <button class="tool-btn" id="btn-file-read">Read File</button>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div class="sidebar-section-title">// SESSION</div>
+
+      <div class="sidebar-row">
+        <span class="sidebar-key">User</span>
+        <span class="sidebar-val" id="s-user">—</span>
+      </div>
+      <div class="sidebar-row">
+        <span class="sidebar-key">Session ID</span>
+        <span class="sidebar-val" id="s-session">—</span>
+      </div>
+      <div class="sidebar-row">
+        <span class="sidebar-key">Permissions</span>
+        <span class="sidebar-val ok" id="s-perms">—</span>
+      </div>
+      <div class="sidebar-row">
+        <span class="sidebar-key">Last Tool</span>
+        <span class="sidebar-val" id="s-last-tool">—</span>
+      </div>
+
+      <div class="sidebar-section-title" style="margin-top:6px;">// STREAM</div>
+
+      <div id="ws-indicator">
+        <span id="ws-dot" class="disconnected"></span>
+        <span id="ws-status" class="sidebar-val">Connecting…</span>
+      </div>
+      <div class="sidebar-row">
+        <span class="sidebar-key">Frames received</span>
+        <span class="sidebar-val" id="s-ws-frames">0</span>
+      </div>
+    </div>
+
+  </div><!-- /main-area -->
+
+  <!-- ── Flag validator ──────────────────────────────────── -->
+  <div id="validator-strip">
+    <span id="validator-label">// SUBMIT FINDING</span>
+    <input type="text" id="flag-input" placeholder="CTF{...}" autocomplete="off" spellcheck="false">
+    <button id="flag-submit">SUBMIT</button>
+    <span id="flag-result"></span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
